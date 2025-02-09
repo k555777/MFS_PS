@@ -5,6 +5,27 @@ import sqlite3
 
 
 class DBOperations:
+
+  #Destination Table queries
+  sql_create_destination_table_firsttime = "CREATE TABLE IF NOT EXISTS Destination (DestinationID VARCHAR(8) NOT NULL PRIMARY KEY, Airport VARCHAR(30) NOT NULL, City VARCHAR(30) NOT NULL,Country VARCHAR(30) NOT NULL);"
+  sql_create_table_destination = "CREATE TABLE Destination (DestinationID VARCHAR(8) NOT NULL,Airport VARCHAR(30) NOT NULL,City VARCHAR(30) NOT NULL,Country VARCHAR(30),PRIMARY KEY (DestinationID));"
+  sql_populate_destination = """INSERT INTO Destination (DestinationID, Airport, City, Country)
+    VALUES 
+    ('BOH', 'Bournemouth Airport', 'Bournemouth', 'UK'),
+    ('NWI', 'Norwich Airport', 'Norwich', 'UK'),
+    ('LPL', 'Liverpool John Lennon Airport', 'Liverpool', 'UK'),
+    ('CWL', 'Cardiff Airport', 'Cardiff', 'Wales'),
+    ('CRL', 'Brussels South Charleroi Airport', 'Charleroi','Belgium'),
+    ('EDI', 'Edinburgh Airport', 'Edinburgh', 'UK'),
+    ('GNB', 'Alpes-Isere Airport', 'Grenoble', 'France'),
+    ('BES', 'Brest Bretagne Airport', 'Brest', 'France'),
+    ('LCY', 'London City Airport', 'London', 'UK');"""
+  sql_insert_destination_data = "INSERT INTO Destination VALUES (?, ?,	?, ?);"
+  sql_select_all_destination_data = "SELECT * FROM Destination;"
+  sql_search_destination = "SELECT * FROM Destination where DestinationID = ?;"
+  sql_delete_destination_data = "DELETE FROM Destination WHERE DestinationID = ?;"
+
+  #Flight Table queries
   sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID BIGINT NOT NULL PRIMARY KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,StatusID VARCHAR(2) NOT NULL);"
   #sql_drop_table = "DROP TABLE IF EXISTS Flight;"
   sql_create_table = "CREATE TABLE Flight (FlightID BIGINT NOT NULL,OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
@@ -19,15 +40,105 @@ class DBOperations:
     (7, 'CWL',	'BOH', 'SC'),
     (8, 'BOH',	'EDI', 'SC');"""
 
-
   sql_insert = "INSERT INTO Flight VALUES (?, ?,	?, ?);"
-
   sql_select_all = "SELECT * FROM Flight;"
   sql_search = "SELECT * FROM Flight where FlightID = ?;"
   sql_alter_data = ""
   sql_update_data = "UPDATE Flight SET StatusID = ? WHERE FlightID = ? ;"
   sql_delete_data = "DELETE FROM Flight WHERE FlightID = ?"
   sql_drop_table = "DROP TABLE IF EXISTS Flight;"
+
+  def __init_destination__(self):
+    try:
+      self.conn = sqlite3.connect("FMS_DB.db")
+      self.cur = self.conn.cursor()
+  
+      self.cur.execute(self.sql_create_destination_table_firsttime)
+      self.conn.commit()
+      self.cur.execute(self.sql_populate_destination)
+      self.conn.commit()
+      self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+      print(self.cur.fetchall())
+      print('Database input started')
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def create_table_destination(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_create_table_destination)
+      self.cur.execute(self.sql_populate_destination)
+      self.conn.commit()
+      print("Table created successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def insert_destination_data(self):
+    try:
+      self.get_connection()
+
+      destination = DestinationInfo()
+      destination.set_destination_id(str(input("Enter Destination Airport IATA Code: ")))
+      destination.set_destination_airport(str(input("Enter Airport name: ")))
+      destination.set_destination_city(str(input("Enter Airport's City name: ")))
+      destination.set_destination_country(str(input("Enter Airport's country name: ")))
+  
+      #challenge encountered - the split of the tuple did not work for the destination data possibly due to the delimiter choice - this was resolved with supplying the input as four strings already split
+      #self.cur.execute(self.sql_insert_destination_data, tuple(str(destination).split("\n")))
+      self.cur.execute(self.sql_insert_destination_data, (str(destination.get_destination_id()),str(destination.get_destination_airport()), str(destination.get_destination_city()), str(destination.get_destination_country())))
+      self.conn.commit()
+      print("Inserted data successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def select_all_destination_data(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_select_all_destination_data)
+      result = self.cur.fetchall()
+
+      # think how you could develop this method to show the records
+      for row in result:
+        print("DestinationID = ", row[0])
+        print("Airport = ", row[1])
+        print("City = ", row[2])
+        print("Country = ", row[3])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def search_destination_data(self):
+    try:
+      self.get_connection()
+      destinationID = str(input("Enter DestinationID: "))
+      self.cur.execute(self.sql_search_destination, (str(destinationID),))
+      result = self.cur.fetchone()
+      if type(result) == type(tuple()):
+        for index, detail in enumerate(result):
+          if index == 0:
+            print("Destination Code: " + str(detail))
+          elif index == 1:
+            print("Destination Airport: " + str(detail))
+          elif index == 2:
+            print("Destination City: " + str(detail))
+          else:
+            print("Destination Country: " + str(detail))
+      else:
+        print("No Record")
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
 
   def __init__(self):
     try:
@@ -69,22 +180,10 @@ class DBOperations:
       flight = FlightInfo()
       flight.set_flight_id(int(input("Enter FlightID: ")))
       flight.set_flight_origin(str(input("Enter Origin Airport IATA Code: ")))
-      #flight.set_flight_origin('BOH')
       flight.set_flight_destination(str(input("Enter Destination Airport IATA Code: ")))
-      #flight.set_flight_departure_date(str(input("Enter Departure Date in format YYYY-MM-DD: ")))
-      #flight.set_flight_schedule_id(int(input("Enter Schedule ID: ")))
       flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled: ")))
-      
-      # flightID = flight.get_flight_id()
-      # originID = flight.get_flight_origin()
-      # destinationID = flight.get_flight_destination()
-      # scheduleID = flight.get_status()
-
-      # data = (flightID, originID, destinationID, scheduleID)
-
-
+  
       self.cur.execute(self.sql_insert, tuple(str(flight).split("\n")))
-      #self.cur.execute(self.sql_insert, data)
 
       self.conn.commit()
       print("Inserted data successfully")
@@ -243,6 +342,42 @@ class FlightInfo:
     return str(self.flightID) + "\n" + self.flightOrigin + "\n" + self.flightDestination + "\n" + str(self.status)
 
 
+class DestinationInfo:
+  def __init_destination__(self):
+    self.destinationID = ''
+    self.airport = ''
+    self.city = ''
+    self.country = ''
+
+  def set_destination_id(self, destinationID):
+    self.destinationID = destinationID
+
+  # self.flight_origin was replaced with self.flightOrigin as specified in the declaration for the variables to fix the input bug
+  def set_destination_airport(self, airport):
+    self.airport = airport
+
+  # self.flight_destination was replaced with self.flightDestination as specified in the declaration for the variables to fix the input bug
+  def set_destination_city(self, city):
+    self.city = city
+  
+  def set_destination_country(self, country):
+    self.country = country
+
+  def get_destination_id(self):
+    return self.destinationID
+
+  def get_destination_airport(self):
+    return self.airport
+
+  def get_destination_city(self):
+    return self.city
+  
+  def get_destination_country(self):
+    return self.country
+
+  def __str_dest__(self):
+    return str(self.destinationID) + "\n" + str(self.airport) + "\n" + str(self.city) + "\n" + str(self.country)
+
 # The main function will parse arguments.
 # These argument will be definded by the users on the console.
 # The user will select a choice from the menu to interact with the database.
@@ -250,12 +385,19 @@ class FlightInfo:
 while True:
   print("\n Menu:")
   print("**********")
-  print(" 1. Create table FlightInfo")
+  print("FlightInfo Menu")
+  print(" 1. Create table Flight")
   print(" 2. Insert data into FlightInfo")
   print(" 3. Select all data from FlightInfo")
   print(" 4. Search a flight")
   print(" 5. Update data some records")
   print(" 6. Delete data some records")
+  print("**********")
+  print("DestinationInfo Menu")
+  print(" 8. Create table Destination")
+  print(" 9. Insert data into Destination")
+  print(" 10. Select all data from Destination")
+  print(" 11. Search a Destination")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -272,6 +414,14 @@ while True:
     db_ops.update_data()
   elif __choose_menu == 6:
     db_ops.delete_data()
+  elif __choose_menu == 8:
+    db_ops.create_table_destination()
+  elif __choose_menu == 9:
+    db_ops.insert_destination_data()
+  elif __choose_menu == 10:
+    db_ops.select_all_destination_data()
+  elif __choose_menu == 11:
+    db_ops.search_destination_data()
   elif __choose_menu == 7:
     exit(0)
   else:

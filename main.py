@@ -5,32 +5,28 @@ import sqlite3
 
 
 class DBOperations:
-  sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID VARCHAR(8) PRIMARY KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,DepartureDate DATE NOT NULL,ScheduleID INT NOT NULL,StatusID VARCHAR(2) NOT NULL);"
+  sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID BIGINT NOT NULL PRIMARY KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,StatusID VARCHAR(2) NOT NULL);"
   #sql_drop_table = "DROP TABLE IF EXISTS Flight;"
-  sql_create_table = "CREATE TABLE Flight (FlightID VARCHAR(8),OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,DepartureDate DATE NOT NULL,ScheduleID INT NOT NULL REFERENCES Schedule,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
-  sql_populate_flight = "INSERT INTO Flight (FlightID, OriginID, DestinationID, DepartureDate, ScheduleID, StatusID) VALUES ('TYCV', 'BOH',	'NWI',	'2025-02-14', 6, 'SC'),('T25V', 'NWI',	'BOH',	'2025-02-15', 7, 'SC'),"
-  "('1KOR', 'BOH',	'LPL',	'2025-02-16', 1, 'SC'),"
-  "('RTY2', 'LPL',	'BOH',	'2025-02-17', 2, 'SC'),"
-  "('CVNE', 'BOH',	'CWL',	'2025-02-18', 3, 'SC'),"
-  "('WERT', 'BOH',	'CRL',	'2025-02-19', 4, 'SC'),"
-  "('VGP8', 'CWL',	'BOH',	'2025-02-20', 5, 'SC'),"
-  "('128I', 'BOH',	'EDI',	'2025-02-21', 6, 'SC'),"
-  "('W7YT', 'CRL',	'BOH',	'2025-02-22', 7, 'SC'),"
-  "('B78Y', 'EDI',	'BOH',	'2025-02-23', 1, 'SC'),"
-  "('Q7XC', 'BOH',	'GNB',	'2025-02-24', 2, 'SC'),"
-  "('9YFI', 'GNB',	'BOH',	'2025-02-25', 3, 'SC'),"
-  "('V7YT', 'BOH',	'BES',	'2025-02-25', 8, 'SC'),"
-  "('8YT6', 'BOH',	'LCY',	'2025-02-26', 4, 'SC'),"
-  "('A5CV', 'BES',	'BOH',	'2025-02-27', 5, 'SC'),"
-  "('19UY', 'LCY',	'BOH',	'2025-02-28', 6, 'SC');"
+  sql_create_table = "CREATE TABLE Flight (FlightID BIGINT NOT NULL,OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
+  sql_populate_flight = """INSERT INTO Flight (FlightID, OriginID, DestinationID, StatusID)
+    VALUES 
+    (1, 'BOH',	'NWI', 'SC'),
+    (2, 'NWI',	'BOH', 'SC'),
+    (3, 'BOH',	'LPL', 'SC'),
+    (4, 'LPL',	'BOH', 'SC'),
+    (5, 'BOH',	'CWL', 'SC'),
+    (6, 'BOH',	'CRL', 'SC'),
+    (7, 'CWL',	'BOH', 'SC'),
+    (8, 'BOH',	'EDI', 'SC');"""
 
-  sql_insert = "INSERT INTO Flight VALUES (?, ?,	?, ?, ?, ?);"
 
-  sql_select_all = "SELECT * FROM Flight"
-  sql_search = "SELECT * FROM Flight where FlightID = ?"
+  sql_insert = "INSERT INTO Flight VALUES (?, ?,	?, ?);"
+
+  sql_select_all = "SELECT * FROM Flight;"
+  sql_search = "SELECT * FROM Flight where FlightID = ?;"
   sql_alter_data = ""
-  sql_update_data = ""
-  sql_delete_data = ""
+  sql_update_data = "UPDATE Flight SET StatusID = ? WHERE FlightID = ? ;"
+  sql_delete_data = "DELETE FROM Flight WHERE FlightID = ?"
   sql_drop_table = "DROP TABLE IF EXISTS Flight;"
 
   def __init__(self):
@@ -71,14 +67,24 @@ class DBOperations:
       self.get_connection()
 
       flight = FlightInfo()
-      flight.set_flight_id(str(input("Enter FlightID: ")))
+      flight.set_flight_id(int(input("Enter FlightID: ")))
       flight.set_flight_origin(str(input("Enter Origin Airport IATA Code: ")))
+      #flight.set_flight_origin('BOH')
       flight.set_flight_destination(str(input("Enter Destination Airport IATA Code: ")))
-      flight.set_flight_departure_date(str(input("Enter Departure Date in format YYYY-MM-DD: ")))
-      flight.set_flight_schedule_id(int(input("Enter Schedule ID: ")))
+      #flight.set_flight_departure_date(str(input("Enter Departure Date in format YYYY-MM-DD: ")))
+      #flight.set_flight_schedule_id(int(input("Enter Schedule ID: ")))
       flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled: ")))
+      
+      # flightID = flight.get_flight_id()
+      # originID = flight.get_flight_origin()
+      # destinationID = flight.get_flight_destination()
+      # scheduleID = flight.get_status()
+
+      # data = (flightID, originID, destinationID, scheduleID)
+
 
       self.cur.execute(self.sql_insert, tuple(str(flight).split("\n")))
+      #self.cur.execute(self.sql_insert, data)
 
       self.conn.commit()
       print("Inserted data successfully")
@@ -98,9 +104,9 @@ class DBOperations:
         print("FlightID = ", row[0])
         print("Origin = ", row[1])
         print("Destination = ", row[2])
-        print("Departure Date = ", row[3])
-        print("Schedule ID = ", row[4])
-        print("Status = ", row[5])
+        #print("Departure Date = ", row[3])
+        #print("Schedule ID = ", row[4])
+        print("Status = ", row[3])
 
     except Exception as e:
       print(e)
@@ -110,7 +116,7 @@ class DBOperations:
   def search_data(self):
     try:
       self.get_connection()
-      flightID = str(input("Enter FlightID: "))
+      flightID = int(input("Enter FlightID: "))
       self.cur.execute(self.sql_search, tuple(str(flightID)))
       result = self.cur.fetchone()
       if type(result) == type(tuple()):
@@ -118,11 +124,11 @@ class DBOperations:
           if index == 0:
             print("Flight ID: " + str(detail))
           elif index == 1:
-            print("Flight Origin: " + detail)
+            print("Flight Origin: " + str(detail))
           elif index == 2:
-            print("Flight Destination: " + detail)
+            print("Flight Destination: " + str(detail))
           else:
-            print("Status: " + str(detail))
+            print("Status: " + detail)
       else:
         print("No Record")
 
@@ -136,9 +142,28 @@ class DBOperations:
       self.get_connection()
 
       # Update statement
+      flight = FlightInfo()
+      flight.set_flight_id(int(input("Enter FlightID: ")))
+      flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled: ")))
+      flightID = flight.get_flight_id()
+      statusID = flight.get_status()
+      data = (statusID, flightID)
 
+      #self.cur.execute(self.sql_insert, tuple(str(flight).split("\n")))
+      self.cur.execute(self.sql_update_data, data)
+      self.conn.commit()
+      print('Updated data successfully')
+
+      result = self.cur.fetchall()
+      for row in result:
+        print("FlightID = ", row[0])
+        print("Origin = ", row[1])
+        print("Destination = ", row[2])
+        print("Status = ", row[3])
+
+    #this is a bug to resolve: the programign is complainting the list object has no attribute rowcount - todolist
       if result.rowcount != 0:
-        print(str(result.rowcount) + "Row(s) affected.")
+        print(str(self.cur.rowcount) + "Row(s) affected.")
       else:
         print("Cannot find this record in the database")
 
@@ -154,6 +179,12 @@ class DBOperations:
     try:
       self.get_connection()
 
+      flightID = int(input("Enter FlightID: "))
+
+      self.cur.execute(self.sql_delete_data, tuple(str(flightID)))
+      self.conn.commit()
+      result = self.cur.fetchone()
+
       if result.rowcount != 0:
         print(str(result.rowcount) + "Row(s) affected.")
       else:
@@ -168,27 +199,30 @@ class DBOperations:
 class FlightInfo:
 
   def __init__(self):
-    self.flightID = ''
+    self.flightID = 0
     self.flightOrigin = ''
     self.flightDestination = ''
-    self.flightDepartureDate = ''
-    self.flightScheduleID = 0
+    #self.flightDepartureDate = 
+    #self.flightScheduleID = 0
     self.status = ''
 
   def set_flight_id(self, flightID):
     self.flightID = flightID
 
+  # self.flight_origin was replaced with self.flightOrigin as specified in the declaration for the variables to fix the input bug
   def set_flight_origin(self, flightOrigin):
-    self.flight_origin = flightOrigin
+    self.flightOrigin = flightOrigin
 
+
+  # self.flight_destination was replaced with self.flightDestination as specified in the declaration for the variables to fix the input bug
   def set_flight_destination(self, flightDestination):
-    self.flight_destination = flightDestination
+    self.flightDestination = flightDestination
   
-  def set_flight_departure_date(self, flightDepartureDate):
-    self.flight_departure_date = flightDepartureDate
+  # def set_flight_departure_date(self, flightDepartureDate):
+  #   self.flight_departure_date = flightDepartureDate
 
-  def set_flight_schedule_id(self, flightScheduleID):
-    self.flight_schedule_id = flightScheduleID
+  # def set_flight_schedule_id(self, flightScheduleID):
+  #   self.flight_schedule_id = flightScheduleID
 
   def set_status(self, status):
     self.status = status
@@ -202,20 +236,11 @@ class FlightInfo:
   def get_flight_destination(self):
     return self.flightDestination
   
-  def get_flight_departure_date(self):
-    return self.flightDepartureDate
-
-  def get_flight_schedule_id(self):
-    return self.flightScheduleID
-  
   def get_status(self):
     return self.status
 
   def __str__(self):
-    return str(
-      self.flightID
-    ) + "\n" + self.flightOrigin + "\n" + self.flightDestination + "\n" + str(self.flightDepartureDate) + "\n" + str(self.flightScheduleID) + "\n" + str(
-      self.status)
+    return str(self.flightID) + "\n" + self.flightOrigin + "\n" + self.flightDestination + "\n" + str(self.status)
 
 
 # The main function will parse arguments.

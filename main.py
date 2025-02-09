@@ -5,12 +5,26 @@ import sqlite3
 
 
 class DBOperations:
-  sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID INT AUTO_INCREMENT PRIMARY KEY,OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,DepartureDate DATE NOT NULL,ScheduleID INT NOT NULL,StatusID VARCHAR(2) NOT NULL);"
+  sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID VARCHAR(8) PRIMARY KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,DepartureDate DATE NOT NULL,ScheduleID INT NOT NULL,StatusID VARCHAR(2) NOT NULL);"
+  #sql_drop_table = "DROP TABLE IF EXISTS Flight;"
+  sql_create_table = "CREATE TABLE Flight (FlightID VARCHAR(8),OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,DepartureDate DATE NOT NULL,ScheduleID INT NOT NULL REFERENCES Schedule,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
+  sql_populate_flight = "INSERT INTO Flight (FlightID, OriginID, DestinationID, DepartureDate, ScheduleID, StatusID) VALUES ('TYCV', 'BOH',	'NWI',	'2025-02-14', 6, 'SC'),('T25V', 'NWI',	'BOH',	'2025-02-15', 7, 'SC'),"
+  "('1KOR', 'BOH',	'LPL',	'2025-02-16', 1, 'SC'),"
+  "('RTY2', 'LPL',	'BOH',	'2025-02-17', 2, 'SC'),"
+  "('CVNE', 'BOH',	'CWL',	'2025-02-18', 3, 'SC'),"
+  "('WERT', 'BOH',	'CRL',	'2025-02-19', 4, 'SC'),"
+  "('VGP8', 'CWL',	'BOH',	'2025-02-20', 5, 'SC'),"
+  "('128I', 'BOH',	'EDI',	'2025-02-21', 6, 'SC'),"
+  "('W7YT', 'CRL',	'BOH',	'2025-02-22', 7, 'SC'),"
+  "('B78Y', 'EDI',	'BOH',	'2025-02-23', 1, 'SC'),"
+  "('Q7XC', 'BOH',	'GNB',	'2025-02-24', 2, 'SC'),"
+  "('9YFI', 'GNB',	'BOH',	'2025-02-25', 3, 'SC'),"
+  "('V7YT', 'BOH',	'BES',	'2025-02-25', 8, 'SC'),"
+  "('8YT6', 'BOH',	'LCY',	'2025-02-26', 4, 'SC'),"
+  "('A5CV', 'BES',	'BOH',	'2025-02-27', 5, 'SC'),"
+  "('19UY', 'LCY',	'BOH',	'2025-02-28', 6, 'SC');"
 
-  sql_create_table = "CREATE TABLE Flight (FlightID INT AUTO_INCREMENT,OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,DepartureDate DATE NOT NULL,ScheduleID INT NOT NULL REFERENCES Schedule,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID)); INSERT INTO Flight (OriginID, DestinationID, DepartureDate, ScheduleID, StatusID) VALUES ('BOH',	'NWI',	'2025-02-14', 6, 'SC'),('BOH',	'2025-02-15', 7, 'SC'),('BOH',	'LPL',	'2025-02-16', 1, 'SC'),('LPL',	'BOH',	'2025-02-17', 2, 'SC'),('BOH',	'CWL',	'2025-02-18', 3, 'SC'),('BOH',	'CRL',	'2025-02-19', 4, 'SC'),('CWL',	'BOH',	'2025-02-20', 5, 'SC'),('BOH',	'EDI',	'2025-02-21', 6, 'SC'),('CRL',	'BOH',	'2025-02-22', 7, 'SC'),('EDI',	'BOH',	'2025-02-23', 1, 'SC'),('BOH',	'GNB',	'2025-02-24', 2, 'SC'),('GNB',	'BOH',	'2025-02-25', 3, 'SC'),('BOH',	'BES',	'2025-02-25', 8, 'SC'),('BOH',	'LCY',	'2025-02-26', 4, 'SC'),('BES',	'BOH',	'2025-02-27', 5, 'SC'),('LCY',	'BOH',	'2025-02-28', 6, 'SC');"
-
-  sql_insert = "INSERT INTO Flight (FlightID, OriginID, DestinationID, DepartureDate, ScheduleID, StatusID) VALUES (?, '?',	'?',	'?', ?, '?');"
-              
+  sql_insert = "INSERT INTO Flight VALUES (?, ?,	?, ?, ?, ?);"
 
   sql_select_all = "SELECT * FROM Flight"
   sql_search = "SELECT * FROM Flight where FlightID = ?"
@@ -23,8 +37,14 @@ class DBOperations:
     try:
       self.conn = sqlite3.connect("FMS_DB.db")
       self.cur = self.conn.cursor()
+      #self.cur.execute(self.sql_drop_table)
       self.cur.execute(self.sql_create_table_firsttime)
       self.conn.commit()
+      self.cur.execute(self.sql_populate_flight)
+      self.conn.commit()
+      self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+      print(self.cur.fetchall())
+      print('Database input started')
     except Exception as e:
       print(e)
     finally:
@@ -38,6 +58,7 @@ class DBOperations:
     try:
       self.get_connection()
       self.cur.execute(self.sql_create_table)
+      self.cur.execute(self.sql_populate_flight)
       self.conn.commit()
       print("Table created successfully")
     except Exception as e:
@@ -50,13 +71,12 @@ class DBOperations:
       self.get_connection()
 
       flight = FlightInfo()
-      flight.set_flight_id(int(input("Enter FlightID: ")))
+      flight.set_flight_id(str(input("Enter FlightID: ")))
       flight.set_flight_origin(str(input("Enter Origin Airport IATA Code: ")))
       flight.set_flight_destination(str(input("Enter Destination Airport IATA Code: ")))
       flight.set_flight_departure_date(str(input("Enter Departure Date in format YYYY-MM-DD: ")))
       flight.set_flight_schedule_id(int(input("Enter Schedule ID: ")))
       flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled: ")))
-
 
       self.cur.execute(self.sql_insert, tuple(str(flight).split("\n")))
 
@@ -90,7 +110,7 @@ class DBOperations:
   def search_data(self):
     try:
       self.get_connection()
-      flightID = int(input("Enter FlightID: "))
+      flightID = str(input("Enter FlightID: "))
       self.cur.execute(self.sql_search, tuple(str(flightID)))
       result = self.cur.fetchone()
       if type(result) == type(tuple()):
@@ -148,7 +168,7 @@ class DBOperations:
 class FlightInfo:
 
   def __init__(self):
-    self.flightID = 0
+    self.flightID = ''
     self.flightOrigin = ''
     self.flightDestination = ''
     self.flightDepartureDate = ''
@@ -194,7 +214,7 @@ class FlightInfo:
   def __str__(self):
     return str(
       self.flightID
-    ) + "\n" + self.flightOrigin + "\n" + self.flightDestination + "\n" + str(self.flightDepartureDate) + "\n" + self.flightScheduleID + "\n" + str(
+    ) + "\n" + self.flightOrigin + "\n" + self.flightDestination + "\n" + str(self.flightDepartureDate) + "\n" + str(self.flightScheduleID) + "\n" + str(
       self.status)
 
 

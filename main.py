@@ -8,8 +8,8 @@ class DBOperations:
 
   #Status Table queries
   sql_create_table_status_firsttime = "CREATE TABLE IF NOT EXISTS Status (StatusID VARCHAR(2) NOT NULL PRIMARY KEY, StatusDesc VARCHAR(15));"
-  sql_create_table_status = "CREATE TABLE Schedule (StatusID VARCHAR(2) NOT NULL, StatusDesc VARCHAR(15),PRIMARY KEY (StatusID));"
-  sql_populate_status = """INSERT INTO Schedule (StatusID, StatusDesc)
+  sql_create_table_status = "CREATE TABLE Status (StatusID VARCHAR(2) NOT NULL, StatusDesc VARCHAR(15),PRIMARY KEY (StatusID));"
+  sql_populate_status = """INSERT INTO Status (StatusID, StatusDesc)
     VALUES
     ('SC', 'Scheduled'),
     ('CN', 'Cancelled'),
@@ -171,7 +171,7 @@ class DBOperations:
     finally:
       self.conn.close()
 
-  def create_table_schedule(self):
+  def create_table_status(self):
     try:
       self.get_connection()
       self.cur.execute(self.sql_create_table_status)
@@ -949,6 +949,8 @@ while True:
   elif __choose_menu == 18:
     db_ops.select_all_flight_pilot_data()
   elif __choose_menu == 19:
+    db_ops.search_data_by_destination_city()
+  elif __choose_menu == 20:
     db_ops.search_data_by_destination_city_and_status_desc()
   elif __choose_menu == 21:
     db_ops.search_pilot_schedule()

@@ -42,7 +42,7 @@ class DBOperations:
     JOIN Flight ON Schedule.ScheduleID = Flight.ScheduleID
     JOIN Flight_Pilot ON Flight_Pilot.FlightID = Flight.FlightID
     JOIN Pilot ON Flight_Pilot.PilotID = Pilot.PilotID
-    where Pilot.PilotID = ?
+    WHERE Pilot.PilotID = ?
     GROUP BY Schedule.WeekDay, Flight.DepartureDate
     ORDER BY Schedule.WeekDay;"""
 
@@ -200,6 +200,7 @@ class DBOperations:
       self.conn.close()
 
   #Shedule methods
+  #Initialise and populate the schedule table
   def __init_schedule__(self):
     try:
       self.conn = sqlite3.connect("FMS_DB.db")
@@ -231,11 +232,14 @@ class DBOperations:
 
   def select_all_schedule_data(self):
     try:
+      #connect to the database
       self.get_connection()
+      #execute the sql statement
       self.cur.execute(self.sql_select_all_schedule_data)
+      #collect all the rows into result
       result = self.cur.fetchall()
 
-      # think how you could develop this method to show the records
+      # walking through each row and displaying the result row's attribute as row by row
       for row in result:
         print("Schedule ID = ", row[0])
         print("WeekDay = ", row[1])
@@ -299,7 +303,7 @@ class DBOperations:
       flightPilot = FlightPilotInfo()
       flightPilot.set_flight_id(str(input("Enter Flight ID: ")))
       flightPilot.set_pilot_id(int(input("Enter Pilot ID: ")))
-      
+      #providing the input strings explicitly in place of question makrs of the sql query
       self.cur.execute(self.sql_insert_flight_pilot_data, (str(flightPilot.get_flight_id()),str(flightPilot.get_pilot_id())))
       self.conn.commit()
       print("Inserted data successfully")
@@ -537,15 +541,16 @@ class DBOperations:
   def insert_data(self):
     try:
       self.get_connection()
-
+      #create an object flight
       flight = FlightInfo()
+      #set the attributes to the newly provided input values
       flight.set_flight_id(int(input("Enter FlightID: ")))
       flight.set_flight_origin(str(input("Enter Origin Airport IATA Code: ")))
       flight.set_flight_destination(str(input("Enter Destination Airport IATA Code: ")))
       flight.set_flight_departure_date(str(input("Enter Departure Date in a format YYYY-MM-DD: ")))
       flight.set_flight_schedule_id(str(input("Enter Schedule ID, please refer to the Schedule table, for example, 1: ")))
       flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled: ")))
-  
+      #using the tuple split to extract the individual strings from the object that was converted to strings
       self.cur.execute(self.sql_insert, tuple(str(flight).split("\n")))
 
       self.conn.commit()
@@ -555,13 +560,13 @@ class DBOperations:
     finally:
       self.conn.close()
 
+  #a method to display all the records from flight table
   def select_all(self):
     try:
       self.get_connection()
       self.cur.execute(self.sql_select_all)
       result = self.cur.fetchall()
-
-      # think how you could develop this method to show the records
+      #stepping through the fetched rows and converting their attributes into rows
       for row in result:
         print("FlightID = ", row[0])
         print("Origin = ", row[1])
@@ -603,6 +608,7 @@ class DBOperations:
     finally:
       self.conn.close()
 
+  #a method to search the flight data by the name of the destination city, for example - Bournemouth or Edinburgh
   def search_data_by_destination_city(self):
     try:
       self.get_connection()
@@ -622,6 +628,7 @@ class DBOperations:
     finally:
       self.conn.close()
   
+  #a method to search the flight data by the name of the destination city and by the status description, for example all fligths arriving to Edinburgh and have a status descriprtion Scheduled
   def search_data_by_destination_city_and_status_desc(self):
     try:
       self.get_connection()
@@ -642,6 +649,7 @@ class DBOperations:
     finally:
       self.conn.close()  
 
+  #a method to update flight status by providing status code such as OT for On Time, CN for Cancelled, AV for Arrived
   def update_data(self):
     try:
       self.get_connection()
@@ -686,9 +694,9 @@ class DBOperations:
     try:
       self.get_connection()
 
-      flightID = int(input("Enter FlightID: "))
-
-      self.cur.execute(self.sql_delete_data, tuple(str(flightID)))
+      flightID = str(input("Enter FlightID: "))
+      #fixed the bindings bug for the delete statement - however, now obtained a message ''NoneType' object has no attribute 'rowcount''
+      self.cur.execute(self.sql_delete_data, (flightID,))
       self.conn.commit()
       result = self.cur.fetchone()
 

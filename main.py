@@ -6,19 +6,23 @@ import sqlite3
 
 class DBOperations:
   #Schedule Table queries
-  sql_create_table_schedule_firsttime = "CREATE TABLE IF NOT EXISTS Schedule (ScheduleID BIGINT NOT NULL PRIMARY KEY, FlightID BIGINT NOT NULL FOREIGN KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,StatusID VARCHAR(2) NOT NULL);"
-  sql_create_table_schedule = "CREATE TABLE Flight (FlightID BIGINT NOT NULL,OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
-  sql_populate_schedule = """INSERT INTO Flight (FlightID, OriginID, DestinationID, StatusID)
+  sql_create_table_schedule_firsttime = "CREATE TABLE IF NOT EXISTS Schedule (ScheduleID MEDIUMINT NOT NULL PRIMARY KEY, WeekDay VARCHAR(10) NOT NULL, DepartureTime DATE NOT NULL);"
+  sql_create_table_schedule = "CREATE TABLE Schedule (ScheduleID MEDIUMINT NOT NULL,WeekDay VARCHAR(10) NOT NULL,DepartureTime DATE NOT NULL,PRIMARY KEY (ScheduleID));"
+  sql_populate_schedule = """INSERT INTO Schedule (ScheduleID, WeekDay, DepartureTime)
     VALUES 
-    (1, 'BOH',	'NWI', 'SC'),
-    (2, 'NWI',	'BOH', 'SC'),
-    (3, 'BOH',	'LPL', 'SC'),
-    (4, 'LPL',	'BOH', 'SC'),
-    (5, 'BOH',	'CWL', 'SC'),
-    (6, 'BOH',	'CRL', 'SC'),
-    (7, 'CWL',	'BOH', 'SC'),
-    (8, 'BOH',	'EDI', 'SC');"""
-
+    (1, 'SUN', '14:30'),
+    (2, 'MON', '10:30'),
+    (3, 'TUE', '09:30'),
+    (4, 'WED', '10:30'),
+    (5, 'THU', '17:30'),
+    (6, 'FRI', '15:30'),
+    (7, 'SAT', '11:30'),
+    (8, 'SAT', '20:30'),
+    (9, 'SUN', '11:30'),
+    (10, 'MON', '18:30'),
+    (11, 'TUE', '08:30'),
+    (12, 'WED', '17:30');"""
+  sql_select_all_schedule_data = "SELECT * FROM Schedule;"
 
   #Flight Pilot Table queries
   sql_create_flight_pilot_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight_Pilot (PilotID MEDIUMINT, FlightID BIGINT, PRIMARY KEY (PilotID, FlightID));"
@@ -91,10 +95,58 @@ class DBOperations:
   sql_select_all = "SELECT * FROM Flight;"
   sql_search = "SELECT * FROM Flight where FlightID = ?;"
   sql_search_by_destination_city = "SELECT * FROM Flight JOIN Destination ON Flight.DestinationID = Destination.DestinationID WHERE Flight.DestinationID IN (SELECT Destination.DestinationID FROM Destination WHERE Destination.City = ?);"
+  sql_search_by_destination_city_and_status_desc = """SELECT * FROM Flight JOIN Destination ON Flight.DestinationID = Destination.DestinationID WHERE Flight.DestinationID IN (SELECT Destination.DestinationID FROM Destination WHERE Destination.City = ?) AND
+  Flight.StatusID IN (SELECT Status.StatusID FROM Status WHERE Status.StatusDesc = ?);"""
   sql_alter_data = ""
   sql_update_data = "UPDATE Flight SET StatusID = ? WHERE FlightID = ? ;"
   sql_delete_data = "DELETE FROM Flight WHERE FlightID = ?"
   sql_drop_table = "DROP TABLE IF EXISTS Flight;"
+
+  def __init_schedule__(self):
+    try:
+      self.conn = sqlite3.connect("FMS_DB.db")
+      self.cur = self.conn.cursor()
+  
+      self.cur.execute(self.sql_create_table_schedule_firsttime)
+      self.conn.commit()
+      self.cur.execute(self.sql_populate_schedule)
+      self.conn.commit()
+      self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+      print(self.cur.fetchall())
+      print('Database input started')
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def create_table_schedule(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_create_table_schedule)
+      self.cur.execute(self.sql_populate_schedule)
+      self.conn.commit()
+      print("Table created successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def select_all_schedule_data(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_select_all_schedule_data)
+      result = self.cur.fetchall()
+
+      # think how you could develop this method to show the records
+      for row in result:
+        print("Schedule ID = ", row[0])
+        print("WeekDay = ", row[1])
+        print("Departure Time = ", row[2])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
 
   def __init_flight_pilot__(self):
     try:
@@ -642,6 +694,34 @@ class FlightPilotInfo:
   def __str__(self):
     return str(self.flightID) + "\n" + str(self.pilotID)
   
+class ScheduleInfo:
+
+  def __init_schedule__(self):
+    self.scheduleID = 0
+    self.weekDay = ''
+    self.departureTime = ''
+
+  def set_schedule_id(self, scheduleID):
+    self.scheduleID = scheduleID
+  
+  def set_week_day(self, weekDay):
+    self.weekDay = weekDay
+  
+  def set_departure_time(self, departureTime):
+    self.departureTime = departureTime
+
+  def get_departure_time(self):
+    return self.departureTime
+  
+  def get_schedule_id(self):
+    return self.scheduleID
+  
+  def get_week_day(self):
+    return self.weekDay
+
+  def __str__(self):
+    return str(self.sceduleID) + "\n" + str(self.weekDay)+ "\n" + str(self.departureTime)
+    
 # The main function will parse arguments.
 # These argument will be definded by the users on the console.
 # The user will select a choice from the menu to interact with the database.
@@ -655,6 +735,7 @@ while True:
   print(" 3. Select all data from FlightInfo")
   print(" 4. Search a flight by id")
   print(" 19. View flights for a particular destination city")
+  print(" 20. View flights for a particular destination city and with a particular status description")
   print(" 5. Update data flight status")
   print(" 6. Delete data from flight by flight id")
   print("**********")
@@ -674,7 +755,11 @@ while True:
   print(" 16. Create table Flight_Pilot")
   print(" 17. Assigh Pilot to a Flight")
   print(" 18. View all Pilot-Flight assignments")
-  print(" 20. View Pilot's Schedule")
+  print(" 21. View Pilot's Schedule")
+  print("Schedule Menu")
+  print(" 22. Create table Schedule")
+  print(" 23. View all available airline's Schedules")
+  print(" 24. View Pilot's Schedule")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -714,9 +799,14 @@ while True:
   elif __choose_menu == 18:
     db_ops.select_all_flight_pilot_data()
   elif __choose_menu == 19:
-    db_ops.search_data_by_destination_city()
-  elif __choose_menu == 20:
+    #to add a method
+    db_ops.search_data_by_destination_city_and_status_desc()
+  elif __choose_menu == 21:
     db_ops.select_pilot_schedule_data()
+  elif __choose_menu == 22:
+    db_ops.create_table_schedule()
+  elif __choose_menu == 23:
+    db_ops.select_all_schedule_data()
   elif __choose_menu == 7:
     exit(0)
   else:

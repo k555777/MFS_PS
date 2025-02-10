@@ -6,9 +6,6 @@ import sqlite3
 
 class DBOperations:
 
-  #View Pilot's Schedule query
-  
-
   #Schedule Table queries
   sql_create_table_schedule_firsttime = "CREATE TABLE IF NOT EXISTS Schedule (ScheduleID MEDIUMINT NOT NULL PRIMARY KEY, WeekDay VARCHAR(10) NOT NULL, DepartureTime DATE NOT NULL);"
   sql_create_table_schedule = "CREATE TABLE Schedule (ScheduleID MEDIUMINT NOT NULL,WeekDay VARCHAR(10) NOT NULL,DepartureTime DATE NOT NULL,PRIMARY KEY (ScheduleID));"
@@ -37,13 +34,24 @@ class DBOperations:
     ORDER BY Schedule.WeekDay;"""
 
 
-
   #Flight Pilot Table queries
   sql_create_flight_pilot_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight_Pilot (PilotID MEDIUMINT, FlightID BIGINT, PRIMARY KEY (PilotID, FlightID));"
   sql_create_table_flight_pilot = "CREATE TABLE Flight_Pilot (PilotID MEDIUMINT, FlightID BIGINT,PRIMARY KEY (PilotID, FlightID), FOREIGN KEY(PilotID) REFERENCES Pilot(PilotID),FOREIGN KEY(FlightID) REFERENCES Flight(FlightID));"
   sql_populate_flight_pilot = """INSERT INTO Flight_Pilot (FlightID, PilotID)
     VALUES 
     (1, 1),
+    (2, 1),
+    (5, 8),
+    (6, 10),
+    (3, 14),
+    (3, 15),
+    (7, 2),
+    (7, 8),
+    (10, 10),
+    (10, 14),
+    (11, 11),
+    (11, 5),
+    (12, 9),
     (1, 15);"""
   sql_insert_flight_pilot_data = "INSERT INTO Flight_Pilot VALUES (?, ?);"
   sql_select_all_flight_pilot_data = "SELECT * FROM Flight_Pilot;"
@@ -85,7 +93,15 @@ class DBOperations:
     ('EDI', 'Edinburgh Airport', 'Edinburgh', 'UK'),
     ('GNB', 'Alpes-Isere Airport', 'Grenoble', 'France'),
     ('BES', 'Brest Bretagne Airport', 'Brest', 'France'),
-    ('LCY', 'London City Airport', 'London', 'UK');"""
+    ('SOU', 'Southampton Airport', 'Southampton', 'UK'),
+    ('MAN', 'Manchester Airport', 'Manchester', 'UK'),
+    ('HUY', 'Humberside Airport', 'Hull', 'UK'),
+    ('EXT', 'Exeter Airport', 'Exeter', 'UK'),
+    ('BRS', 'Bristol Airport', 'Bristol','UK'),
+    ('BHX', 'BHX', 'Birmingham', 'UK'),
+    ('EMA', 'Nottingham Airport', 'Nottingham', 'UK'),
+    ('STN', 'London Stansted Airport', 'London', 'UK'),
+    ('MME', 'Teesside International Airport', 'Middlesbrough', 'UK');"""
   sql_insert_destination_data = "INSERT INTO Destination VALUES (?, ?,	?, ?);"
   sql_select_all_destination_data = "SELECT * FROM Destination;"
   sql_search_destination = "SELECT * FROM Destination where DestinationID = ?;"

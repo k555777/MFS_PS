@@ -6,6 +6,19 @@ import sqlite3
 
 class DBOperations:
 
+  #Status Table queries
+  sql_create_table_status_firsttime = "CREATE TABLE IF NOT EXISTS Status (StatusID VARCHAR(2) NOT NULL PRIMARY KEY, StatusDesc VARCHAR(15));"
+  sql_create_table_status = "CREATE TABLE Schedule (StatusID VARCHAR(2) NOT NULL, StatusDesc VARCHAR(15),PRIMARY KEY (StatusID));"
+  sql_populate_status = """INSERT INTO Schedule (StatusID, StatusDesc)
+    VALUES
+    ('SC', 'Scheduled'),
+    ('CN', 'Cancelled'),
+    ('OT', 'On Time'),
+    ('DE', 'Delayed'),
+    ('AV', 'Arrived'),
+    ('DP', 'Departed');"""
+  sql_select_all_status_data = "SELECT * FROM Status;"
+
   #Schedule Table queries
   sql_create_table_schedule_firsttime = "CREATE TABLE IF NOT EXISTS Schedule (ScheduleID MEDIUMINT NOT NULL PRIMARY KEY, WeekDay VARCHAR(10) NOT NULL, DepartureTime DATE NOT NULL);"
   sql_create_table_schedule = "CREATE TABLE Schedule (ScheduleID MEDIUMINT NOT NULL,WeekDay VARCHAR(10) NOT NULL,DepartureTime DATE NOT NULL,PRIMARY KEY (ScheduleID));"
@@ -140,6 +153,53 @@ class DBOperations:
   sql_delete_data = "DELETE FROM Flight WHERE FlightID = ?"
   sql_drop_table = "DROP TABLE IF EXISTS Flight;"
 
+  #Status methods
+  def __init_status__(self):
+    try:
+      self.conn = sqlite3.connect("FMS_DB.db")
+      self.cur = self.conn.cursor()
+  
+      self.cur.execute(self.sql_create_table_status_firsttime)
+      self.conn.commit()
+      self.cur.execute(self.sql_populate_status)
+      self.conn.commit()
+      self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+      print(self.cur.fetchall())
+      print('Database input started')
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def create_table_schedule(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_create_table_status)
+      self.cur.execute(self.sql_populate_status)
+      self.conn.commit()
+      print("Table created successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def select_all_status_data(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_select_all_status_data)
+      result = self.cur.fetchall()
+
+      # think how you could develop this method to show the records
+      for row in result:
+        print("Status ID = ", row[0])
+        print("Status Description = ", row[1])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  #Shedule methods
   def __init_schedule__(self):
     try:
       self.conn = sqlite3.connect("FMS_DB.db")
@@ -561,6 +621,26 @@ class DBOperations:
       print(e)
     finally:
       self.conn.close()
+  
+  def search_data_by_destination_city_and_status_desc(self):
+    try:
+      self.get_connection()
+      city = str(input("Enter Destination City, for example London: "))
+      status = str(input("Enter Status Description as per Status table, for example 'Cancelled': "))
+      self.cur.execute(self.sql_search_by_destination_city_and_status_desc, (city, status))
+      result = self.cur.fetchall()
+      for row in result:
+        print("FlightID = ", row[0])
+        print("Origin = ", row[1])
+        print("Destination = ", row[2])
+        print("Departure Date = ", row[3])
+        print("Schedule ID = ", row[4])
+        print("Status = ", row[5])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()  
 
   def update_data(self):
     try:
@@ -827,6 +907,9 @@ while True:
   print("Schedule Menu")
   print(" 22. Create table Schedule")
   print(" 23. View all available airline's Schedules")
+  print("Fligth Status Menu")
+  print(" 24. Create table Status")
+  print(" 25. View all descriptions for status codes")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -866,7 +949,6 @@ while True:
   elif __choose_menu == 18:
     db_ops.select_all_flight_pilot_data()
   elif __choose_menu == 19:
-    #to add a method
     db_ops.search_data_by_destination_city_and_status_desc()
   elif __choose_menu == 21:
     db_ops.search_pilot_schedule()
@@ -874,6 +956,10 @@ while True:
     db_ops.create_table_schedule()
   elif __choose_menu == 23:
     db_ops.select_all_schedule_data()
+  elif __choose_menu == 24:
+    db_ops.create_table_status()
+  elif __choose_menu == 25:
+    db_ops.select_all_status_data()
   elif __choose_menu == 7:
     exit(0)
   else:

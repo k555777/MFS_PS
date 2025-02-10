@@ -1,3 +1,5 @@
+-- This is a sandbox for testing the queries using the test database FMS_DB_TEST.db
+
 --fectching all the flights
 SELECT * from Flight;
 

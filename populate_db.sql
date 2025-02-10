@@ -1,3 +1,6 @@
+-- This is a Sandbox for testing the sample data and queries using the test database FMS_DB_TEST.db
+-- This test database has small differences in that Flight ID is not integer  - it is a string, and the sample dataset is smaller than in the final
+-- database used for the sqlite connection
 
 INSERT INTO Flight (FlightID, OriginID, DestinationID, DepartureDate, ScheduleID, StatusID)
 VALUES 

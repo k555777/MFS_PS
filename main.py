@@ -5,6 +5,20 @@ import sqlite3
 
 
 class DBOperations:
+  #Schedule Table queries
+  sql_create_table_schedule_firsttime = "CREATE TABLE IF NOT EXISTS Schedule (ScheduleID BIGINT NOT NULL PRIMARY KEY, FlightID BIGINT NOT NULL FOREIGN KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,StatusID VARCHAR(2) NOT NULL);"
+  sql_create_table_schedule = "CREATE TABLE Flight (FlightID BIGINT NOT NULL,OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
+  sql_populate_schedule = """INSERT INTO Flight (FlightID, OriginID, DestinationID, StatusID)
+    VALUES 
+    (1, 'BOH',	'NWI', 'SC'),
+    (2, 'NWI',	'BOH', 'SC'),
+    (3, 'BOH',	'LPL', 'SC'),
+    (4, 'LPL',	'BOH', 'SC'),
+    (5, 'BOH',	'CWL', 'SC'),
+    (6, 'BOH',	'CRL', 'SC'),
+    (7, 'CWL',	'BOH', 'SC'),
+    (8, 'BOH',	'EDI', 'SC');"""
+
 
   #Flight Pilot Table queries
   sql_create_flight_pilot_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight_Pilot (PilotID MEDIUMINT, FlightID BIGINT, PRIMARY KEY (PilotID, FlightID));"
@@ -76,6 +90,7 @@ class DBOperations:
   sql_insert = "INSERT INTO Flight VALUES (?, ?,	?, ?);"
   sql_select_all = "SELECT * FROM Flight;"
   sql_search = "SELECT * FROM Flight where FlightID = ?;"
+  sql_search_by_destination_city = "SELECT * FROM Flight JOIN Destination ON Flight.DestinationID = Destination.DestinationID WHERE Flight.DestinationID IN (SELECT Destination.DestinationID FROM Destination WHERE Destination.City = ?);"
   sql_alter_data = ""
   sql_update_data = "UPDATE Flight SET StatusID = ? WHERE FlightID = ? ;"
   sql_delete_data = "DELETE FROM Flight WHERE FlightID = ?"
@@ -415,6 +430,25 @@ class DBOperations:
     finally:
       self.conn.close()
 
+  def search_data_by_destination_city(self):
+    try:
+      self.get_connection()
+      city = str(input("Enter Destination City, for example London: "))
+      self.cur.execute(self.sql_search_by_destination_city, (city,))
+      result = self.cur.fetchall()
+      for row in result:
+        print("FlightID = ", row[0])
+        print("Origin = ", row[1])
+        print("Destination = ", row[2])
+        #print("Departure Date = ", row[3])
+        #print("Schedule ID = ", row[4])
+        print("Status = ", row[3])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
   def update_data(self):
     try:
       self.get_connection()
@@ -619,7 +653,8 @@ while True:
   print(" 1. Create table Flight")
   print(" 2. Insert data into FlightInfo")
   print(" 3. Select all data from FlightInfo")
-  print(" 4. Search a flight")
+  print(" 4. Search a flight by id")
+  print(" 19. View flights for a particular destination city")
   print(" 5. Update data flight status")
   print(" 6. Delete data from flight by flight id")
   print("**********")
@@ -639,7 +674,7 @@ while True:
   print(" 16. Create table Flight_Pilot")
   print(" 17. Assigh Pilot to a Flight")
   print(" 18. View all Pilot-Flight assignments")
-  print(" 19. View Pilot's Schedule")
+  print(" 20. View Pilot's Schedule")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -679,6 +714,8 @@ while True:
   elif __choose_menu == 18:
     db_ops.select_all_flight_pilot_data()
   elif __choose_menu == 19:
+    db_ops.search_data_by_destination_city()
+  elif __choose_menu == 20:
     db_ops.select_pilot_schedule_data()
   elif __choose_menu == 7:
     exit(0)

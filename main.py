@@ -625,8 +625,8 @@ class DBOperations:
   def search_data_by_destination_city_and_status_desc(self):
     try:
       self.get_connection()
-      city = str(input("Enter Destination City, for example London: "))
-      status = str(input("Enter Status Description as per Status table, for example 'Cancelled': "))
+      city = str(input("Enter Destination City, for example Bournemouth: "))
+      status = str(input("Enter Status Description as per Status table, for example 'Scheduled': "))
       self.cur.execute(self.sql_search_by_destination_city_and_status_desc, (city, status))
       result = self.cur.fetchall()
       for row in result:
@@ -649,7 +649,7 @@ class DBOperations:
       # Update statement
       flight = FlightInfo()
       flight.set_flight_id(int(input("Enter FlightID: ")))
-      flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled or 'AV' for arrived: ")))
+      flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled or 'AV' for Arrived: ")))
       flightID = flight.get_flight_id()
       statusID = flight.get_status()
       data = (statusID, flightID)
@@ -680,7 +680,7 @@ class DBOperations:
       self.conn.close()
 
 
-# Define Delete_data method to delete data from the table. The user will need to input the flight id to delete the corrosponding record.
+# Define Delete_data method to delete data from the table. The user will need to input the flight id to delete the corresponding record.
 
   def delete_data(self):
     try:

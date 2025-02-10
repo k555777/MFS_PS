@@ -6,6 +6,33 @@ import sqlite3
 
 class DBOperations:
 
+  #Flight Pilot Table queries
+  
+
+  #Pilot Table queries
+  sql_create_pilot_table_firsttime = "CREATE TABLE IF NOT EXISTS Pilot (PilotID MEDIUMINT NOT NULL PRIMARY KEY, PilotName VARCHAR(40) NOT NULL, PilotSeniority MEDIUMINT UNSIGNED NOT NULL);"
+  sql_create_table_pilot = "CREATE TABLE Pilot (PilotID MEDIUMINT NOT NULL, PilotName VARCHAR(40) NOT NULL, PilotSeniority MEDIUMINT UNSIGNED NOT NULL, PRIMARY KEY (PilotID));"
+  sql_populate_pilot = """INSERT INTO Pilot (PilotID, PilotName, PilotSeniority)
+    VALUES 
+    (1, 'Johnson, Trevor', 4),
+    (2, 'Leibnitz, Kira', 4),
+    (3, 'Donald, Scott', 2),
+    (4, 'Freidrich, Larry', 4),
+    (5, 'Lansky, Marina', 1),
+    (6, 'Borisoff, Ilana', 4),
+    (7, 'Mirsky, Konstantin', 3),
+    (8, 'Levis, Alex', 1),
+    (9, 'Johnson, Trevor', 4),
+    (10, 'Bain, Sameera', 4),
+    (11, 'Richardson, Kevin', 3),
+    (12, 'Zhang, Li', 4),
+    (13, 'Mirny, George', 2),
+    (14, 'Pavicj, Maria', 4),
+    (15, 'Jackson, Daniel', 1);"""
+  sql_insert_pilot_data = "INSERT INTO Pilot VALUES (?, ?, ?);"
+  sql_select_all_pilot_data = "SELECT * FROM Pilot;"
+  sql_search_pilot = "SELECT * FROM Pilot where PilotID = ?;"
+
   #Destination Table queries
   sql_create_destination_table_firsttime = "CREATE TABLE IF NOT EXISTS Destination (DestinationID VARCHAR(8) NOT NULL PRIMARY KEY, Airport VARCHAR(30) NOT NULL, City VARCHAR(30) NOT NULL,Country VARCHAR(30) NOT NULL);"
   sql_create_table_destination = "CREATE TABLE Destination (DestinationID VARCHAR(8) NOT NULL,Airport VARCHAR(30) NOT NULL,City VARCHAR(30) NOT NULL,Country VARCHAR(30),PRIMARY KEY (DestinationID));"
@@ -23,7 +50,6 @@ class DBOperations:
   sql_insert_destination_data = "INSERT INTO Destination VALUES (?, ?,	?, ?);"
   sql_select_all_destination_data = "SELECT * FROM Destination;"
   sql_search_destination = "SELECT * FROM Destination where DestinationID = ?;"
-  sql_delete_destination_data = "DELETE FROM Destination WHERE DestinationID = ?;"
 
   #Flight Table queries
   sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID BIGINT NOT NULL PRIMARY KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,StatusID VARCHAR(2) NOT NULL);"
@@ -47,6 +73,91 @@ class DBOperations:
   sql_update_data = "UPDATE Flight SET StatusID = ? WHERE FlightID = ? ;"
   sql_delete_data = "DELETE FROM Flight WHERE FlightID = ?"
   sql_drop_table = "DROP TABLE IF EXISTS Flight;"
+
+  def __init_pilot__(self):
+    try:
+      self.conn = sqlite3.connect("FMS_DB.db")
+      self.cur = self.conn.cursor()
+  
+      self.cur.execute(self.sql_create_pilot_table_firsttime)
+      self.conn.commit()
+      self.cur.execute(self.sql_populate_pilot)
+      self.conn.commit()
+      self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+      print(self.cur.fetchall())
+      print('Database input started')
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def create_table_pilot(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_create_table_pilot)
+      self.cur.execute(self.sql_populate_pilot)
+      self.conn.commit()
+      print("Table created successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def insert_pilot_data(self):
+    try:
+      self.get_connection()
+
+      pilot = PilotInfo()
+      pilot.set_pilot_id(int(input("Enter Pilot ID: ")))
+      pilot.set_pilot_name(str(input("Enter Pilot name as 'Surname, Name': ")))
+      pilot.set_pilot_seniority(int(input("Enter Pilot's seniority rung from 1 to 4 : ")))
+  
+      self.cur.execute(self.sql_insert_pilot_data, (str(pilot.get_pilot_id()),str(pilot.get_pilot_name()), str(pilot.get_pilot_seniority())))
+      self.conn.commit()
+      print("Inserted data successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def select_all_pilot_data(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_select_all_pilot_data)
+      result = self.cur.fetchall()
+
+      # think how you could develop this method to show the records
+      for row in result:
+        print("Pilot ID = ", row[0])
+        print("Pilot Name = ", row[1])
+        print("Pilot Seniority = ", row[2])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def search_pilot_data(self):
+    try:
+      self.get_connection()
+      pilotID = str(input("Enter PilotID: "))
+      self.cur.execute(self.sql_search_pilot, (str(pilotID),))
+      result = self.cur.fetchone()
+      if type(result) == type(tuple()):
+        for index, detail in enumerate(result):
+          if index == 0:
+            print("Pilot ID: " + str(detail))
+          elif index == 1:
+            print("Pilot Name: " + str(detail))
+          else:
+            print("Pilot Seniority: " + str(detail))
+      else:
+        print("No Record")
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
 
   def __init_destination__(self):
     try:
@@ -378,6 +489,37 @@ class DestinationInfo:
   def __str_dest__(self):
     return str(self.destinationID) + "\n" + str(self.airport) + "\n" + str(self.city) + "\n" + str(self.country)
 
+class PilotInfo:
+
+  def __init_pilot__(self):
+    self.pilotID = 0
+    self.pilotName = ''
+    self.pilotSeniority = 0
+
+  def set_pilot_id(self, pilotID):
+    self.pilotID = pilotID
+
+  # self.flight_origin was replaced with self.flightOrigin as specified in the declaration for the variables to fix the input bug
+  def set_pilot_name(self, pilotName):
+    self.pilotName = pilotName
+
+  # self.flight_destination was replaced with self.flightDestination as specified in the declaration for the variables to fix the input bug
+  def set_pilot_seniority(self, pilotSeniority):
+    self.pilotSeniority = pilotSeniority
+
+  def get_pilot_id(self):
+    return self.pilotID
+
+  def get_pilot_name(self):
+    return self.pilotName
+
+  def get_pilot_seniority(self):
+    return self.pilotSeniority
+
+  def __str__(self):
+    return str(self.pilotID) + "\n" + self.pilotName + "\n" + str(self.pilotSeniority)
+
+
 # The main function will parse arguments.
 # These argument will be definded by the users on the console.
 # The user will select a choice from the menu to interact with the database.
@@ -390,14 +532,22 @@ while True:
   print(" 2. Insert data into FlightInfo")
   print(" 3. Select all data from FlightInfo")
   print(" 4. Search a flight")
-  print(" 5. Update data some records")
-  print(" 6. Delete data some records")
+  print(" 5. Update data flight status")
+  print(" 6. Delete data from flight by flight id")
   print("**********")
   print("DestinationInfo Menu")
   print(" 8. Create table Destination")
   print(" 9. Insert data into Destination")
   print(" 10. Select all data from Destination")
   print(" 11. Search a Destination")
+  print("**********")
+  print("PilotInfo Menu")
+  print(" 12. Create table Pilot")
+  print(" 13. Insert data into Pilot")
+  print(" 14. Select all data from Pilot")
+  print(" 15. Search a Pilot")
+  print("**********")
+  print(" 16. Pilot Flight Menu")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -421,7 +571,15 @@ while True:
   elif __choose_menu == 10:
     db_ops.select_all_destination_data()
   elif __choose_menu == 11:
-    db_ops.search_destination_data()
+    db_ops.search_pilot_data()
+  elif __choose_menu == 12:
+    db_ops.create_table_pilot()
+  elif __choose_menu == 13:
+    db_ops.insert_pilot_data()
+  elif __choose_menu == 14:
+    db_ops.select_all_pilot_data()
+  elif __choose_menu == 15:
+    db_ops.search_pilot_data()
   elif __choose_menu == 7:
     exit(0)
   else:

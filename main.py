@@ -5,6 +5,10 @@ import sqlite3
 
 
 class DBOperations:
+
+  #View Pilot's Schedule query
+  
+
   #Schedule Table queries
   sql_create_table_schedule_firsttime = "CREATE TABLE IF NOT EXISTS Schedule (ScheduleID MEDIUMINT NOT NULL PRIMARY KEY, WeekDay VARCHAR(10) NOT NULL, DepartureTime DATE NOT NULL);"
   sql_create_table_schedule = "CREATE TABLE Schedule (ScheduleID MEDIUMINT NOT NULL,WeekDay VARCHAR(10) NOT NULL,DepartureTime DATE NOT NULL,PRIMARY KEY (ScheduleID));"
@@ -23,6 +27,16 @@ class DBOperations:
     (11, 'TUE', '08:30'),
     (12, 'WED', '17:30');"""
   sql_select_all_schedule_data = "SELECT * FROM Schedule;"
+  sql_search_pilot_schedule = """SELECT Flight.FlightID, Flight.DepartureDate, Schedule.WeekDay, Schedule.DepartureTime
+    FROM Schedule
+    JOIN Flight ON Schedule.ScheduleID = Flight.ScheduleID
+    JOIN Flight_Pilot ON Flight_Pilot.FlightID = Flight.FlightID
+    JOIN Pilot ON Flight_Pilot.PilotID = Pilot.PilotID
+    where Pilot.PilotID = ?
+    GROUP BY Schedule.WeekDay, Flight.DepartureDate
+    ORDER BY Schedule.WeekDay;"""
+
+
 
   #Flight Pilot Table queries
   sql_create_flight_pilot_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight_Pilot (PilotID MEDIUMINT, FlightID BIGINT, PRIMARY KEY (PilotID, FlightID));"
@@ -77,21 +91,29 @@ class DBOperations:
   sql_search_destination = "SELECT * FROM Destination where DestinationID = ?;"
 
   #Flight Table queries
-  sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID BIGINT NOT NULL PRIMARY KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL,StatusID VARCHAR(2) NOT NULL);"
+  sql_create_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight (FlightID BIGINT NOT NULL PRIMARY KEY, OriginID VARCHAR(8) NOT NULL,DestinationID VARCHAR(8) NOT NULL, DepartureDate DATE NOT NULL, ScheduleID int NOT NULL, StatusID VARCHAR(2) NOT NULL);"
   #sql_drop_table = "DROP TABLE IF EXISTS Flight;"
-  sql_create_table = "CREATE TABLE Flight (FlightID BIGINT NOT NULL,OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination,StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
-  sql_populate_flight = """INSERT INTO Flight (FlightID, OriginID, DestinationID, StatusID)
+  sql_create_table = "CREATE TABLE Flight (FlightID BIGINT NOT NULL,OriginID VARCHAR(8) NOT NULL REFERENCES Destination,DestinationID VARCHAR(8) NOT NULL REFERENCES Destination, DepartureDate DATE NOT NULL, ScheduleID int NOT NULL REFERENCES Schedule, StatusID VARCHAR(2) REFERENCES Status,PRIMARY KEY (FlightID));"
+  sql_populate_flight = """INSERT INTO Flight (FlightID, OriginID, DestinationID, DepartureDate, ScheduleID, StatusID)
     VALUES 
-    (1, 'BOH',	'NWI', 'SC'),
-    (2, 'NWI',	'BOH', 'SC'),
-    (3, 'BOH',	'LPL', 'SC'),
-    (4, 'LPL',	'BOH', 'SC'),
-    (5, 'BOH',	'CWL', 'SC'),
-    (6, 'BOH',	'CRL', 'SC'),
-    (7, 'CWL',	'BOH', 'SC'),
-    (8, 'BOH',	'EDI', 'SC');"""
+    (1, 'BOH',	'NWI',	'2025-02-14', 6, 'SC'),
+    (2, 'NWI',	'BOH',	'2025-02-15', 7, 'SC'),
+    (3, 'BOH',	'LPL',	'2025-02-16', 1, 'SC'),
+    (4, 'LPL',	'BOH',	'2025-02-17', 2, 'SC'),
+    (5, 'BOH',	'CWL',	'2025-02-18', 3, 'SC'),
+    (6, 'BOH',	'CRL',	'2025-02-19', 4, 'SC'),
+    (7, 'CWL',	'BOH',	'2025-02-20', 5, 'SC'),
+    (8, 'BOH',	'EDI',	'2025-02-21', 6, 'SC'),
+    (9, 'CRL',	'BOH',	'2025-02-22', 7, 'SC'),
+    (10, 'EDI',	'BOH',	'2025-02-23', 1, 'SC'),
+    (11, 'BOH',	'GNB',	'2025-02-24', 2, 'SC'),
+    (12, 'GNB',	'BOH',	'2025-02-25', 3, 'SC'),
+    (13, 'BOH',	'BES',	'2025-02-25', 8, 'SC'),
+    (14, 'BOH',	'LCY',	'2025-02-26', 4, 'SC'),
+    (15, 'BES',	'BOH',	'2025-02-27', 5, 'SC'),
+    (16, 'LCY',	'BOH',	'2025-02-28', 6, 'SC');"""
 
-  sql_insert = "INSERT INTO Flight VALUES (?, ?,	?, ?);"
+  sql_insert = "INSERT INTO Flight VALUES (?, ?,	?, ?, ?, ?);"
   sql_select_all = "SELECT * FROM Flight;"
   sql_search = "SELECT * FROM Flight where FlightID = ?;"
   sql_search_by_destination_city = "SELECT * FROM Flight JOIN Destination ON Flight.DestinationID = Destination.DestinationID WHERE Flight.DestinationID IN (SELECT Destination.DestinationID FROM Destination WHERE Destination.City = ?);"
@@ -142,6 +164,23 @@ class DBOperations:
         print("Schedule ID = ", row[0])
         print("WeekDay = ", row[1])
         print("Departure Time = ", row[2])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def search_pilot_schedule(self):
+    try:
+      self.get_connection()
+      pilotID = int(input("Enter Pilot ID, for example 1: "))
+      self.cur.execute(self.sql_search_pilot_schedule, (pilotID,))
+      result = self.cur.fetchall()
+      for row in result:
+        print("FlightID = ", row[0])
+        print("Departure Date = ", row[1])
+        print("WeekDay = ", row[2])
+        print("Departure Time = ", row[3])
 
     except Exception as e:
       print(e)
@@ -427,6 +466,8 @@ class DBOperations:
       flight.set_flight_id(int(input("Enter FlightID: ")))
       flight.set_flight_origin(str(input("Enter Origin Airport IATA Code: ")))
       flight.set_flight_destination(str(input("Enter Destination Airport IATA Code: ")))
+      flight.set_flight_departure_date(str(input("Enter Departure Date in a format YYYY-MM-DD: ")))
+      flight.set_flight_schedule_id(str(input("Enter Schedule ID, please refer to the Schedule table, for example, 1: ")))
       flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled: ")))
   
       self.cur.execute(self.sql_insert, tuple(str(flight).split("\n")))
@@ -449,9 +490,9 @@ class DBOperations:
         print("FlightID = ", row[0])
         print("Origin = ", row[1])
         print("Destination = ", row[2])
-        #print("Departure Date = ", row[3])
-        #print("Schedule ID = ", row[4])
-        print("Status = ", row[3])
+        print("Departure Date = ", row[3])
+        print("Schedule ID = ", row[4])
+        print("Status = ", row[5])
 
     except Exception as e:
       print(e)
@@ -472,6 +513,10 @@ class DBOperations:
             print("Flight Origin: " + str(detail))
           elif index == 2:
             print("Flight Destination: " + str(detail))
+          elif index == 3:
+            print("Flight Departure Date: " + str(detail))
+          elif index == 4:
+            print("Flight Schedule ID: " + str(detail))  
           else:
             print("Status: " + detail)
       else:
@@ -492,9 +537,9 @@ class DBOperations:
         print("FlightID = ", row[0])
         print("Origin = ", row[1])
         print("Destination = ", row[2])
-        #print("Departure Date = ", row[3])
-        #print("Schedule ID = ", row[4])
-        print("Status = ", row[3])
+        print("Departure Date = ", row[3])
+        print("Schedule ID = ", row[4])
+        print("Status = ", row[5])
 
     except Exception as e:
       print(e)
@@ -508,7 +553,7 @@ class DBOperations:
       # Update statement
       flight = FlightInfo()
       flight.set_flight_id(int(input("Enter FlightID: ")))
-      flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled: ")))
+      flight.set_status(str(input("Enter Flight Status as 'SC' for Scheduled or 'AV' for arrived: ")))
       flightID = flight.get_flight_id()
       statusID = flight.get_status()
       data = (statusID, flightID)
@@ -523,7 +568,9 @@ class DBOperations:
         print("FlightID = ", row[0])
         print("Origin = ", row[1])
         print("Destination = ", row[2])
-        print("Status = ", row[3])
+        print("Departure Date = ", row[3])
+        print("Schedule ID = ", row[4])
+        print("Status = ", row[5])
 
     #this is a bug to resolve: the programign is complainting the list object has no attribute rowcount - todolist
       if result.rowcount != 0:
@@ -566,8 +613,8 @@ class FlightInfo:
     self.flightID = 0
     self.flightOrigin = ''
     self.flightDestination = ''
-    #self.flightDepartureDate = 
-    #self.flightScheduleID = 0
+    self.flightDepartureDate = ''
+    self.flightScheduleID = 0
     self.status = ''
 
   def set_flight_id(self, flightID):
@@ -577,16 +624,15 @@ class FlightInfo:
   def set_flight_origin(self, flightOrigin):
     self.flightOrigin = flightOrigin
 
-
   # self.flight_destination was replaced with self.flightDestination as specified in the declaration for the variables to fix the input bug
   def set_flight_destination(self, flightDestination):
     self.flightDestination = flightDestination
   
-  # def set_flight_departure_date(self, flightDepartureDate):
-  #   self.flight_departure_date = flightDepartureDate
+  def set_flight_departure_date(self, flightDepartureDate):
+    self.flightDepartureDate = flightDepartureDate
 
-  # def set_flight_schedule_id(self, flightScheduleID):
-  #   self.flight_schedule_id = flightScheduleID
+  def set_flight_schedule_id(self, flightScheduleID):
+    self.flightScheduleID = flightScheduleID
 
   def set_status(self, status):
     self.status = status
@@ -600,11 +646,17 @@ class FlightInfo:
   def get_flight_destination(self):
     return self.flightDestination
   
+  def get_flight_departure_date(self):
+    return self.flightDepartureDate
+
+  def get_flight_schedule_id(self):
+    return self.flightScheduleID
+  
   def get_status(self):
     return self.status
 
   def __str__(self):
-    return str(self.flightID) + "\n" + self.flightOrigin + "\n" + self.flightDestination + "\n" + str(self.status)
+    return str(self.flightID) + "\n" + self.flightOrigin + "\n" + self.flightDestination + "\n" + self.flightDepartureDate + "\n" + str(self.flightScheduleID) + "\n" + str(self.status)
 
 
 class DestinationInfo:
@@ -759,7 +811,6 @@ while True:
   print("Schedule Menu")
   print(" 22. Create table Schedule")
   print(" 23. View all available airline's Schedules")
-  print(" 24. View Pilot's Schedule")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -802,7 +853,7 @@ while True:
     #to add a method
     db_ops.search_data_by_destination_city_and_status_desc()
   elif __choose_menu == 21:
-    db_ops.select_pilot_schedule_data()
+    db_ops.search_pilot_schedule()
   elif __choose_menu == 22:
     db_ops.create_table_schedule()
   elif __choose_menu == 23:

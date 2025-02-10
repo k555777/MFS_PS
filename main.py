@@ -7,7 +7,14 @@ import sqlite3
 class DBOperations:
 
   #Flight Pilot Table queries
-  
+  sql_create_flight_pilot_table_firsttime = "CREATE TABLE IF NOT EXISTS Flight_Pilot (PilotID MEDIUMINT, FlightID BIGINT, PRIMARY KEY (PilotID, FlightID));"
+  sql_create_table_flight_pilot = "CREATE TABLE Flight_Pilot (PilotID MEDIUMINT, FlightID BIGINT,PRIMARY KEY (PilotID, FlightID), FOREIGN KEY(PilotID) REFERENCES Pilot(PilotID),FOREIGN KEY(FlightID) REFERENCES Flight(FlightID));"
+  sql_populate_flight_pilot = """INSERT INTO Flight_Pilot (FlightID, PilotID)
+    VALUES 
+    (1, 1),
+    (1, 15);"""
+  sql_insert_flight_pilot_data = "INSERT INTO Flight_Pilot VALUES (?, ?);"
+  sql_select_all_flight_pilot_data = "SELECT * FROM Flight_Pilot;"
 
   #Pilot Table queries
   sql_create_pilot_table_firsttime = "CREATE TABLE IF NOT EXISTS Pilot (PilotID MEDIUMINT NOT NULL PRIMARY KEY, PilotName VARCHAR(40) NOT NULL, PilotSeniority MEDIUMINT UNSIGNED NOT NULL);"
@@ -73,6 +80,67 @@ class DBOperations:
   sql_update_data = "UPDATE Flight SET StatusID = ? WHERE FlightID = ? ;"
   sql_delete_data = "DELETE FROM Flight WHERE FlightID = ?"
   sql_drop_table = "DROP TABLE IF EXISTS Flight;"
+
+  def __init_flight_pilot__(self):
+    try:
+      self.conn = sqlite3.connect("FMS_DB.db")
+      self.cur = self.conn.cursor()
+  
+      self.cur.execute(self.sql_create_flight_pilot_table_firsttime)
+      self.conn.commit()
+      self.cur.execute(self.sql_populate_flight_pilot)
+      self.conn.commit()
+      self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+      print(self.cur.fetchall())
+      print('Database input started')
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def create_table_flight_pilot(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_create_table_flight_pilot)
+      self.cur.execute(self.sql_populate_flight_pilot)
+      self.conn.commit()
+      print("Table created successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def insert_flight_pilot_data(self):
+    try:
+      self.get_connection()
+
+      flightPilot = FlightPilotInfo()
+      flightPilot.set_flight_id(str(input("Enter Flight ID: ")))
+      flightPilot.set_pilot_id(int(input("Enter Pilot ID: ")))
+      
+      self.cur.execute(self.sql_insert_flight_pilot_data, (str(flightPilot.get_flight_id()),str(flightPilot.get_pilot_id())))
+      self.conn.commit()
+      print("Inserted data successfully")
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  def select_all_flight_pilot_data(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_select_all_flight_pilot_data)
+      result = self.cur.fetchall()
+
+      # think how you could develop this method to show the records
+      for row in result:
+        print("Pilot ID = ", row[0])
+        print("Flight ID = ", row[1])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
 
   def __init_pilot__(self):
     try:
@@ -519,7 +587,27 @@ class PilotInfo:
   def __str__(self):
     return str(self.pilotID) + "\n" + self.pilotName + "\n" + str(self.pilotSeniority)
 
+class FlightPilotInfo:
 
+  def __init_flight_pilot__(self):
+    self.flightID = 0
+    self.pilotID = 0
+
+  def set_pilot_id(self, pilotID):
+    self.pilotID = pilotID
+  
+  def set_flight_id(self, flightID):
+    self.flightID = flightID
+
+  def get_pilot_id(self):
+    return self.pilotID
+  
+  def get_flight_id(self):
+    return self.flightID
+
+  def __str__(self):
+    return str(self.flightID) + "\n" + str(self.pilotID)
+  
 # The main function will parse arguments.
 # These argument will be definded by the users on the console.
 # The user will select a choice from the menu to interact with the database.
@@ -547,7 +635,11 @@ while True:
   print(" 14. Select all data from Pilot")
   print(" 15. Search a Pilot")
   print("**********")
-  print(" 16. Pilot Flight Menu")
+  print("Pilot Flight Menu")
+  print(" 16. Create table Flight_Pilot")
+  print(" 17. Assigh Pilot to a Flight")
+  print(" 18. View all Pilot-Flight assignments")
+  print(" 19. View Pilot's Schedule")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -580,6 +672,14 @@ while True:
     db_ops.select_all_pilot_data()
   elif __choose_menu == 15:
     db_ops.search_pilot_data()
+  elif __choose_menu == 16:
+    db_ops.create_table_flight_pilot()
+  elif __choose_menu == 17:
+    db_ops.insert_flight_pilot_data()
+  elif __choose_menu == 18:
+    db_ops.select_all_flight_pilot_data()
+  elif __choose_menu == 19:
+    db_ops.select_pilot_schedule_data()
   elif __choose_menu == 7:
     exit(0)
   else:

@@ -1,11 +1,18 @@
 import sqlite3
 
+# If needed, the FMS_DB.db can be deleted and recreated on local. Please recreate all the databases by selecting one at a time menu options 1, 8, 12, 16, 22 and 24
 # Define DBOperation class to manage all data into the database.
 # Give a name of your choice to the database
 
 
 class DBOperations:
 
+  #Summary sql statements
+  sql_count_pilot_schedule = """SELECT DISTINCT Pilot.PilotID, COUNT(Flight_Pilot.FlightID) as flight_count
+    FROM Flight_Pilot
+    INNER JOIN Pilot ON Flight_Pilot.PilotID = Pilot.PilotID
+    GROUP BY Pilot.PilotID;"""
+  
   #Status Table queries
   sql_create_table_status_firsttime = "CREATE TABLE IF NOT EXISTS Status (StatusID VARCHAR(2) NOT NULL PRIMARY KEY, StatusDesc VARCHAR(15));"
   sql_create_table_status = "CREATE TABLE Status (StatusID VARCHAR(2) NOT NULL, StatusDesc VARCHAR(15),PRIMARY KEY (StatusID));"
@@ -312,6 +319,7 @@ class DBOperations:
     finally:
       self.conn.close()
 
+  #display all assignments of pilots to flights
   def select_all_flight_pilot_data(self):
     try:
       self.get_connection()
@@ -328,6 +336,24 @@ class DBOperations:
     finally:
       self.conn.close()
 
+  #a method to count flights assigned per pilot
+  def select_flight_counts_per_pilot(self):
+    try:
+      self.get_connection()
+      self.cur.execute(self.sql_count_pilot_schedule)
+      result = self.cur.fetchall()
+
+      # think how you could develop this method to show the records
+      for row in result:
+        print("Pilot ID = ", row[0])
+        print("Flight Count = ", row[1])
+
+    except Exception as e:
+      print(e)
+    finally:
+      self.conn.close()
+
+  #Pilot methods
   def __init_pilot__(self):
     try:
       self.conn = sqlite3.connect("FMS_DB.db")
@@ -918,6 +944,8 @@ while True:
   print("Fligth Status Menu")
   print(" 24. Create table Status")
   print(" 25. View all descriptions for status codes")
+  print("Summaries Menu")
+  print(" 26. Display number of flights assigned per pilot")
   print(" 7. Exit\n")
 
   __choose_menu = int(input("Enter your choice: "))
@@ -970,6 +998,8 @@ while True:
     db_ops.create_table_status()
   elif __choose_menu == 25:
     db_ops.select_all_status_data()
+  elif __choose_menu == 26:
+    db_ops.select_flight_counts_per_pilot()
   elif __choose_menu == 7:
     exit(0)
   else:
